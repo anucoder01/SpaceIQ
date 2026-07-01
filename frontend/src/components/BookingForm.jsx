@@ -1,0 +1,101 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function BookingForm({ onClose }) {
+  const [step, setStep] = useState(1);
+  const [conflictAlternatives, setConflictAlternatives] = useState(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Mocking a conflict resolution response
+    setConflictAlternatives([
+      { _id: '1', name: 'Conference Room B', capacity: 20 },
+      { _id: '2', name: 'Meeting Room C', capacity: 15 }
+    ]);
+    setStep(2);
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-card border border-border w-full max-w-lg rounded-xl shadow-2xl overflow-hidden glass"
+        >
+          <div className="p-6 border-b border-border flex justify-between items-center">
+            <h2 className="text-xl font-semibold">New Booking Request</h2>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+              &times;
+            </button>
+          </div>
+          
+          <div className="p-6">
+            {step === 1 ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Select Venue</label>
+                  <select className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground">
+                    <option>Main Auditorium</option>
+                    <option>Conference Room A</option>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Start Time</label>
+                    <input type="datetime-local" className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">End Time</label>
+                    <input type="datetime-local" className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" />
+                  </div>
+                </div>
+
+                <button type="submit" className="w-full bg-primary text-primary-foreground py-2 rounded-md hover:opacity-90 transition-opacity mt-4">
+                  Check Availability
+                </button>
+              </form>
+            ) : (
+              <motion.div 
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="space-y-4"
+              >
+                <div className="bg-destructive/10 text-destructive border border-destructive/20 p-4 rounded-md">
+                  <h3 className="font-semibold mb-1">Conflict Detected</h3>
+                  <p className="text-sm">The selected venue is already booked for this time slot.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-medium mb-3">Available Alternatives</h4>
+                  <div className="space-y-2">
+                    {conflictAlternatives?.map(alt => (
+                      <div key={alt._id} className="flex justify-between items-center p-3 border border-border rounded-md hover:bg-white/5 cursor-pointer transition-colors">
+                        <div>
+                          <p className="font-medium">{alt.name}</p>
+                          <p className="text-xs text-muted-foreground">Capacity: {alt.capacity}</p>
+                        </div>
+                        <button className="text-sm text-primary hover:underline">Select</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={() => setStep(1)} className="w-full text-muted-foreground py-2 hover:text-foreground">
+                  Back to Form
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
