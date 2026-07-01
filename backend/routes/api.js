@@ -1,0 +1,32 @@
+const express = require('express');
+const router = express.Router();
+const bookingController = require('../controllers/bookingController');
+const analyticsController = require('../controllers/analyticsController');
+
+// Placeholder for auth middleware
+const authenticate = (req, res, next) => {
+  // Mock authentication - in a real app this would verify JWT
+  req.user = { _id: 'mock_user_id', role: 'Student' };
+  next();
+};
+
+// Bookings
+router.post('/bookings', authenticate, bookingController.createBooking);
+router.get('/bookings', authenticate, bookingController.getAllBookings);
+
+// Analytics
+router.get('/analytics/dashboard', authenticate, analyticsController.getDashboardAnalytics);
+
+// Venues and Assets (Mocked routes for now to keep things simple and functional)
+const Venue = require('../models/Venue');
+router.get('/venues', async (req, res) => {
+  const venues = await Venue.find();
+  res.json(venues);
+});
+router.post('/venues', async (req, res) => {
+  const newVenue = new Venue(req.body);
+  await newVenue.save();
+  res.status(201).json(newVenue);
+});
+
+module.exports = router;
