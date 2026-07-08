@@ -2,6 +2,11 @@
 
 SpaceIQ is a modern, full-stack web application featuring a dynamic React frontend and a robust Express/MongoDB backend. It provides interactive Dashboard and Analytics views designed with modern aesthetics.
 
+## 🌟 Project Highlights
+- **Lead Developer** for a full-stack web application delivering interactive, responsive data dashboards and advanced analytics using **React 19** and **Node.js**.
+- Architected a robust and scalable backend system using **Express.js** and **MongoDB**, optimizing database queries and API endpoints to ensure ultra-low **latency** and high-throughput data processing.
+- Spearheaded the frontend development leveraging **Vite** and **Tailwind CSS** for rapid component rendering, integrating **Framer Motion** to create a seamless and modern user experience.
+- Orchestrated the end-to-end software development lifecycle (SDLC), enforcing best practices in system architecture, secure authentication (bcrypt), and maintainable code design.
 ## 🚀 Tech Stack
 
 ### Frontend
