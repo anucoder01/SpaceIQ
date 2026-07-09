@@ -17,6 +17,18 @@ router.get('/bookings', authenticate, bookingController.getAllBookings);
 // Analytics
 router.get('/analytics/dashboard', authenticate, analyticsController.getDashboardAnalytics);
 
+// Smart Suggestions
+router.get('/recommendations', authenticate, (req, res) => {
+  res.json({
+    suggestedVenue: {
+      id: 'conf-a',
+      name: 'Conf A',
+      reason: 'Based on your frequent bookings for 5 people.',
+      timeSlot: '10:00 AM - 11:00 AM'
+    }
+  });
+});
+
 // Venues and Assets (Mocked routes for now to keep things simple and functional)
 const Venue = require('../models/Venue');
 router.get('/venues', async (req, res) => {
