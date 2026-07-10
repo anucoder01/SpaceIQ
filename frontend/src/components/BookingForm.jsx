@@ -1,18 +1,51 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function BookingForm({ onClose }) {
+export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
   const [step, setStep] = useState(1);
   const [conflictAlternatives, setConflictAlternatives] = useState(null);
+  
+  // Form State
+  const [venueId, setVenueId] = useState(selectedVenue ? selectedVenue._id : (venues.length > 0 ? venues[0]._id : ''));
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mocking a conflict resolution response
-    setConflictAlternatives([
-      { _id: '1', name: 'Conference Room B', capacity: 20 },
-      { _id: '2', name: 'Meeting Room C', capacity: 15 }
-    ]);
-    setStep(2);
+    setError(null);
+    try {
+      const res = await fetch('http://localhost:5000/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Assuming user is mocked as Student (priority 1) in backend, we can just send the body
+        },
+        body: JSON.stringify({
+          venue: venueId,
+          startTime,
+          endTime,
+          purpose,
+          priority: 1
+        })
+      });
+
+      if (res.status === 201) {
+        // Success
+        window.location.reload(); // Simple way to refresh data without global state
+      } else if (res.status === 409) {
+        // Conflict
+        const data = await res.json();
+        setConflictAlternatives(data.alternatives || []);
+        setStep(2);
+      } else {
+        const data = await res.json();
+        setError(data.error || data.message || 'An error occurred.');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
   };
 
   return (
@@ -39,27 +72,61 @@ export default function BookingForm({ onClose }) {
           <div className="p-6">
             {step === 1 ? (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium mb-1">Select Venue</label>
-                  <select className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground">
-                    <option>Main Auditorium</option>
-                    <option>Conference Room A</option>
+                  <select 
+                    className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground"
+                    value={venueId}
+                    onChange={(e) => setVenueId(e.target.value)}
+                    required
+                  >
+                    {venues.map(v => (
+                      <option key={v._id} value={v._id}>{v.name}</option>
+                    ))}
                   </select>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Start Time</label>
-                    <input type="datetime-local" className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" />
+                    <input 
+                      type="datetime-local" 
+                      className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" 
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      required
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">End Time</label>
-                    <input type="datetime-local" className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" />
+                    <input 
+                      type="datetime-local" 
+                      className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium mb-1">Purpose</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-input border border-border rounded-md px-3 py-2 text-foreground" 
+                    placeholder="E.g., Team Sync"
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                  />
+                </div>
+
                 <button type="submit" className="w-full bg-primary text-primary-foreground py-2 rounded-md hover:opacity-90 transition-opacity mt-4">
-                  Check Availability
+                  Confirm Booking
                 </button>
               </form>
             ) : (
@@ -82,7 +149,10 @@ export default function BookingForm({ onClose }) {
                           <p className="font-medium">{alt.name}</p>
                           <p className="text-xs text-muted-foreground">Capacity: {alt.capacity}</p>
                         </div>
-                        <button className="text-sm text-primary hover:underline">Select</button>
+                        <button type="button" onClick={() => {
+                          setVenueId(alt._id);
+                          setStep(1);
+                        }} className="text-sm text-primary hover:underline">Select</button>
                       </div>
                     ))}
                   </div>
