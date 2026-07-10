@@ -7,6 +7,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Map, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
 import BookingForm from '../components/BookingForm';
 import FloorPlanMap from '../components/FloorPlanMap';
+import EmployeeSearch from '../components/EmployeeSearch';
 
 const locales = {
   'en-US': enUS,
@@ -35,9 +36,13 @@ const mockEvents = [
 
 export default function Dashboard() {
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedVenueForBooking, setSelectedVenueForBooking] = useState(null);
   const [events, setEvents] = useState(mockEvents);
-  const [viewMode, setViewMode] = useState('calendar');
+  const [viewMode, setViewMode] = useState('map');
   const [suggestion, setSuggestion] = useState(null);
+  const [venues, setVenues] = useState([]);
+  const [todayBookings, setTodayBookings] = useState([]);
+  const [highlightedVenueId, setHighlightedVenueId] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/recommendations')
@@ -48,13 +53,40 @@ export default function Dashboard() {
         reason: 'Based on your frequent bookings for 5 people.',
         timeSlot: '10:00 AM - 11:00 AM'
       }));
+
+    const fetchData = async () => {
+      try {
+        const [venuesRes, bookingsRes] = await Promise.all([
+          fetch('http://localhost:5000/api/venues'),
+          fetch('http://localhost:5000/api/bookings/today')
+        ]);
+        const venuesData = await venuesRes.json();
+        const bookingsData = await bookingsRes.json();
+        setVenues(venuesData);
+        setTodayBookings(bookingsData);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data', err);
+      }
+    };
+    fetchData();
   }, []);
+
+  const handleEmployeeSelect = (user) => {
+    const booking = todayBookings.find(b => b.user?._id === user._id || b.user?.name === user.name);
+    if (booking && booking.venue) {
+      setHighlightedVenueId(booking.venue._id);
+      setViewMode('map');
+      setTimeout(() => setHighlightedVenueId(null), 5000); // Clear highlight after 5s
+    }
+  };
 
   return (
     <div className="container mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Real-Time Dashboard</h1>
-        <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center">
+            <EmployeeSearch onSelect={handleEmployeeSelect} />
+          </div>
           <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-1 border border-border">
             <button 
               onClick={() => setViewMode('calendar')}
@@ -72,7 +104,7 @@ export default function Dashboard() {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowBookingForm(true)}
+            onClick={() => { setSelectedVenueForBooking(null); setShowBookingForm(true); }}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
           >
             New Booking
@@ -121,13 +153,28 @@ export default function Dashboard() {
               className="bg-card text-card-foreground rounded-lg p-2"
             />
           ) : (
-            <FloorPlanMap onRoomClick={() => setShowBookingForm(true)} />
+            <FloorPlanMap 
+              venues={venues} 
+              todayBookings={todayBookings} 
+              highlightedVenueId={highlightedVenueId}
+              onRoomClick={(venue) => {
+                setSelectedVenueForBooking(venue);
+                setShowBookingForm(true);
+              }} 
+            />
           )}
         </div>
       </motion.div>
 
       {showBookingForm && (
-        <BookingForm onClose={() => setShowBookingForm(false)} />
+        <BookingForm 
+          selectedVenue={selectedVenueForBooking} 
+          venues={venues}
+          onClose={() => {
+            setShowBookingForm(false);
+            setSelectedVenueForBooking(null);
+          }} 
+        />
       )}
     </div>
   );
