@@ -1,61 +1,78 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
-const rooms = [
-  { id: 'conf-a', name: 'Conf A', x: 50, y: 50, width: 200, height: 150, status: 'available' },
-  { id: 'conf-b', name: 'Conf B', x: 270, y: 50, width: 200, height: 150, status: 'booked' },
-  { id: 'studio', name: 'Studio', x: 50, y: 220, width: 150, height: 200, status: 'available' },
-  { id: 'desk-1', name: 'Desk 1', x: 250, y: 220, width: 80, height: 80, status: 'available' },
-  { id: 'desk-2', name: 'Desk 2', x: 350, y: 220, width: 80, height: 80, status: 'booked' },
-];
-
-export default function FloorPlanMap({ onRoomClick }) {
+export default function FloorPlanMap({ venues = [], todayBookings = [], highlightedVenueId, onRoomClick }) {
   const [hovered, setHovered] = useState(null);
 
+  // We rely on the venues passed from the backend
   return (
     <div className="w-full h-full flex items-center justify-center bg-card rounded-lg border border-border overflow-hidden">
       <svg width="600" height="500" viewBox="0 0 600 500" className="w-full h-full max-h-[500px]">
         <rect width="100%" height="100%" fill="transparent" />
         
-        {rooms.map((room) => {
-          const isHovered = hovered === room.id;
-          const isAvailable = room.status === 'available';
+        {venues.map((venue) => {
+          const isHovered = hovered === venue._id;
+          
+          // Determine if it's booked today
+          const now = new Date();
+          const isBookedNow = todayBookings.some(b => {
+            const start = new Date(b.startTime);
+            const end = new Date(b.endTime);
+            return b.venue._id === venue._id && now >= start && now <= end && b.status === 'Approved';
+          });
+          
+          // Or just check overall status logic
+          const isAvailable = venue.status === 'Available' && !isBookedNow;
           const fillClass = isAvailable ? 'fill-primary/20' : 'fill-destructive/20';
           const strokeClass = isAvailable ? 'stroke-primary' : 'stroke-destructive';
           
+          const isHighlighted = highlightedVenueId === venue._id;
+
           return (
             <g 
-              key={room.id}
-              onMouseEnter={() => setHovered(room.id)}
+              key={venue._id}
+              onMouseEnter={() => setHovered(venue._id)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => onRoomClick && onRoomClick(room)}
+              onClick={() => onRoomClick && onRoomClick(venue)}
               className="cursor-pointer transition-all duration-300"
             >
-              <rect 
-                x={room.x} 
-                y={room.y} 
-                width={room.width} 
-                height={room.height} 
+              <motion.rect 
+                x={venue.x} 
+                y={venue.y} 
+                width={venue.width} 
+                height={venue.height} 
                 rx="8"
                 className={`${fillClass} ${strokeClass} ${isHovered ? 'opacity-80' : 'opacity-100'}`}
                 strokeWidth={isHovered ? "4" : "2"}
+                animate={isHighlighted ? {
+                  strokeWidth: [2, 6, 2],
+                  opacity: [1, 0.5, 1],
+                  scale: [1, 1.05, 1],
+                } : {}}
+                transition={isHighlighted ? {
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                } : {}}
+                style={{ originX: (venue.x + venue.width/2)/600, originY: (venue.y + venue.height/2)/500 }}
               />
               <text 
-                x={room.x + room.width / 2} 
-                y={room.y + room.height / 2} 
+                x={venue.x + venue.width / 2} 
+                y={venue.y + venue.height / 2} 
                 textAnchor="middle" 
                 alignmentBaseline="middle"
                 className="fill-foreground font-semibold text-sm"
               >
-                {room.name}
+                {venue.name}
               </text>
               <text 
-                x={room.x + room.width / 2} 
-                y={room.y + room.height / 2 + 20} 
+                x={venue.x + venue.width / 2} 
+                y={venue.y + venue.height / 2 + 20} 
                 textAnchor="middle" 
                 alignmentBaseline="middle"
                 className={`text-xs ${isAvailable ? 'fill-primary' : 'fill-destructive'}`}
               >
-                {room.status.toUpperCase()}
+                {isAvailable ? 'AVAILABLE' : 'BOOKED'}
               </text>
             </g>
           );
