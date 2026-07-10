@@ -13,6 +13,19 @@ const authenticate = (req, res, next) => {
 // Bookings
 router.post('/bookings', authenticate, bookingController.createBooking);
 router.get('/bookings', authenticate, bookingController.getAllBookings);
+router.get('/bookings/today', authenticate, bookingController.getTodayBookings);
+
+const User = require('../models/User');
+router.get('/users/search', authenticate, async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) return res.json([]);
+    const users = await User.find({ name: { $regex: query, $options: 'i' } }).select('name email');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Analytics
 router.get('/analytics/dashboard', authenticate, analyticsController.getDashboardAnalytics);

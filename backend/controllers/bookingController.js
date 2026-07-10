@@ -107,3 +107,22 @@ exports.getAllBookings = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.getTodayBookings = async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const bookings = await Booking.find({
+      startTime: { $lt: endOfDay },
+      endTime: { $gt: startOfDay },
+      status: { $in: ['Pending', 'Approved'] }
+    }).populate('user', 'name email').populate('venue');
+    
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
