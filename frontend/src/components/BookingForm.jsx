@@ -12,8 +12,7 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
   const [purpose, setPurpose] = useState('');
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submitBooking = async (joinWaitlist = false) => {
     setError(null);
     try {
       const res = await fetch('http://localhost:5000/api/bookings', {
@@ -27,7 +26,8 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
           startTime,
           endTime,
           purpose,
-          priority: 1
+          priority: 1,
+          joinWaitlist
         })
       });
 
@@ -46,6 +46,11 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
     } catch (err) {
       setError('Network error');
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    submitBooking(false);
   };
 
   return (
@@ -137,7 +142,13 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
               >
                 <div className="bg-destructive/10 text-destructive border border-destructive/20 p-4 rounded-md">
                   <h3 className="font-semibold mb-1">Conflict Detected</h3>
-                  <p className="text-sm">The selected venue is already booked for this time slot.</p>
+                  <p className="text-sm mb-3">The selected venue is already booked for this time slot.</p>
+                  <button 
+                    onClick={() => submitBooking(true)}
+                    className="w-full bg-destructive text-destructive-foreground py-2 rounded-md hover:opacity-90 transition-opacity"
+                  >
+                    Join Waitlist
+                  </button>
                 </div>
 
                 <div>
