@@ -4,7 +4,7 @@ const Asset = require('../models/Asset');
 
 exports.createBooking = async (req, res) => {
   try {
-    const { venue, assets, startTime, endTime, purpose, priority } = req.body;
+    const { venue, assets, startTime, endTime, purpose, priority, joinWaitlist } = req.body;
     const start = new Date(startTime);
     const end = new Date(endTime);
 
@@ -48,6 +48,21 @@ exports.createBooking = async (req, res) => {
         });
 
       } else {
+        if (joinWaitlist) {
+          const newBooking = new Booking({
+            user: req.user._id,
+            venue,
+            assets,
+            startTime: start,
+            endTime: end,
+            purpose,
+            priority,
+            status: 'Waitlisted'
+          });
+          await newBooking.save();
+          return res.status(201).json({ message: 'Successfully joined the waitlist.', booking: newBooking });
+        }
+
         // Same or lower priority - suggest alternatives
         const requestedVenue = await Venue.findById(venue);
         const capacityRequired = requestedVenue ? requestedVenue.capacity : 0;
@@ -118,11 +133,42 @@ exports.getTodayBookings = async (req, res) => {
     const bookings = await Booking.find({
       startTime: { $lt: endOfDay },
       endTime: { $gt: startOfDay },
-      status: { $in: ['Pending', 'Approved'] }
+      status: { $in: ['Pending', 'Approved', 'Waitlisted'] }
     }).populate('user', 'name email').populate('venue');
     
     res.json(bookings);
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    booking.status = 'Cancelled';
+    await booking.save();
+
+    // Check for waitlisted bookings for the same venue overlapping the canceled time
+    const waitlistedBooking = await Booking.findOne({
+      venue: booking.venue,
+      status: 'Waitlisted',
+      startTime: { $lt: booking.endTime },
+      endTime: { $gt: booking.startTime }
+    }).sort({ createdAt: 1 });
+
+    if (waitlistedBooking) {
+      // Approve the oldest waitlisted booking
+      waitlistedBooking.status = 'Approved';
+      await waitlistedBooking.save();
+    }
+
+    res.json({ message: 'Booking cancelled successfully' });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 };
