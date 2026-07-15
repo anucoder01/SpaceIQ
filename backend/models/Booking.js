@@ -19,7 +19,7 @@ const bookingSchema = new mongoose.Schema({
   endTime: { type: Date, required: true },
   status: {
     type: String,
-    enum: ['Pending', 'Approved', 'Rejected', 'Displaced'],
+    enum: ['Pending', 'Approved', 'Rejected', 'Displaced', 'Waitlisted', 'Cancelled'],
     default: 'Pending'
   },
   priority: {
