@@ -14,6 +14,7 @@ const authenticate = (req, res, next) => {
 router.post('/bookings', authenticate, bookingController.createBooking);
 router.get('/bookings', authenticate, bookingController.getAllBookings);
 router.get('/bookings/today', authenticate, bookingController.getTodayBookings);
+router.delete('/bookings/:id', authenticate, bookingController.cancelBooking);
 
 const User = require('../models/User');
 router.get('/users/search', authenticate, async (req, res) => {
