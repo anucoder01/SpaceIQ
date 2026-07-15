@@ -64,6 +64,13 @@ export default function Dashboard() {
         const bookingsData = await bookingsRes.json();
         setVenues(venuesData);
         setTodayBookings(bookingsData);
+        setEvents(bookingsData.map(b => ({
+          _id: b._id,
+          title: `${b.purpose || 'Booking'} in ${b.venue?.name} ${b.status === 'Waitlisted' ? '(Waitlisted)' : ''}`,
+          start: new Date(b.startTime),
+          end: new Date(b.endTime),
+          status: b.status
+        })));
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       }
@@ -151,6 +158,24 @@ export default function Dashboard() {
               endAccessor="end"
               style={{ height: '100%' }}
               className="bg-card text-card-foreground rounded-lg p-2"
+              onSelectEvent={async (event) => {
+                if (window.confirm(`Do you want to cancel the booking: ${event.title}?`)) {
+                  try {
+                    const res = await fetch(`http://localhost:5000/api/bookings/${event._id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                      window.location.reload();
+                    }
+                  } catch (err) {
+                    console.error('Failed to cancel booking', err);
+                  }
+                }
+              }}
+              eventPropGetter={(event) => {
+                if (event.status === 'Waitlisted') {
+                  return { style: { backgroundColor: '#f59e0b' } }; // amber
+                }
+                return {};
+              }}
             />
           ) : (
             <FloorPlanMap 
