@@ -18,7 +18,7 @@ export default function FloorPlanMap({ venues = [], todayBookings = [], highligh
           const isBookedNow = todayBookings.some(b => {
             const start = new Date(b.startTime);
             const end = new Date(b.endTime);
-            return b.venue._id === venue._id && now >= start && now <= end && b.status === 'Approved';
+            return b.venue?._id === venue._id && now >= start && now <= end && b.status === 'Approved';
           });
           
           // Or just check overall status logic
