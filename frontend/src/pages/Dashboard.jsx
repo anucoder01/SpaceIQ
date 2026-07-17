@@ -8,6 +8,7 @@ import { Map, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
 import BookingForm from '../components/BookingForm';
 import FloorPlanMap from '../components/FloorPlanMap';
 import EmployeeSearch from '../components/EmployeeSearch';
+import { useAuth } from '../context/AuthContext';
 
 const locales = {
   'en-US': enUS,
@@ -37,15 +38,19 @@ const mockEvents = [
 export default function Dashboard() {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedVenueForBooking, setSelectedVenueForBooking] = useState(null);
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]);
   const [viewMode, setViewMode] = useState('map');
   const [suggestion, setSuggestion] = useState(null);
   const [venues, setVenues] = useState([]);
   const [todayBookings, setTodayBookings] = useState([]);
   const [highlightedVenueId, setHighlightedVenueId] = useState(null);
+  const [calendarRange, setCalendarRange] = useState({ start: null, end: null });
+  const { token } = useAuth();
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/recommendations')
+    fetch('http://localhost:5000/api/recommendations', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => setSuggestion(data.suggestedVenue))
       .catch(() => setSuggestion({
@@ -58,25 +63,43 @@ export default function Dashboard() {
       try {
         const [venuesRes, bookingsRes] = await Promise.all([
           fetch('http://localhost:5000/api/venues'),
-          fetch('http://localhost:5000/api/bookings/today')
+          fetch('http://localhost:5000/api/bookings/today', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
         ]);
         const venuesData = await venuesRes.json();
         const bookingsData = await bookingsRes.json();
         setVenues(venuesData);
         setTodayBookings(bookingsData);
-        setEvents(bookingsData.map(b => ({
-          _id: b._id,
-          title: `${b.purpose || 'Booking'} in ${b.venue?.name} ${b.status === 'Waitlisted' ? '(Waitlisted)' : ''}`,
-          start: new Date(b.startTime),
-          end: new Date(b.endTime),
-          status: b.status
-        })));
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       }
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // If range is null, we could fetch default or just wait for Calendar to call onRangeChange
+    // We'll also just fallback to fetching all if range is not set initially to have data on load
+    const url = (calendarRange.start && calendarRange.end) 
+      ? `http://localhost:5000/api/bookings?start=${calendarRange.start.toISOString()}&end=${calendarRange.end.toISOString()}`
+      : 'http://localhost:5000/api/bookings';
+
+    fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setEvents(data.map(b => ({
+          _id: b._id,
+          title: `${b.purpose || 'Booking'} in ${b.venue?.name} ${b.status === 'Waitlisted' ? '(Waitlisted)' : ''}`,
+          start: new Date(b.startTime),
+          end: new Date(b.endTime),
+          status: b.status
+        })));
+      })
+      .catch(err => console.error('Failed to fetch calendar bookings', err));
+  }, [calendarRange]);
 
   const handleEmployeeSelect = (user) => {
     const booking = todayBookings.find(b => b.user?._id === user._id || b.user?.name === user.name);
@@ -117,8 +140,6 @@ export default function Dashboard() {
             New Booking
           </motion.button>
         </div>
-      </div>
-
       {suggestion && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
@@ -158,10 +179,20 @@ export default function Dashboard() {
               endAccessor="end"
               style={{ height: '100%' }}
               className="bg-card text-card-foreground rounded-lg p-2"
+              onRangeChange={(range) => {
+                if (Array.isArray(range)) {
+                  setCalendarRange({ start: range[0], end: range[range.length - 1] });
+                } else {
+                  setCalendarRange({ start: range.start, end: range.end });
+                }
+              }}
               onSelectEvent={async (event) => {
                 if (window.confirm(`Do you want to cancel the booking: ${event.title}?`)) {
                   try {
-                    const res = await fetch(`http://localhost:5000/api/bookings/${event._id}`, { method: 'DELETE' });
+                    const res = await fetch(`http://localhost:5000/api/bookings/${event._id}`, { 
+                      method: 'DELETE',
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
                     if (res.ok) {
                       window.location.reload();
                     }

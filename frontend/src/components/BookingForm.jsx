@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
+  const { token } = useAuth();
   const [step, setStep] = useState(1);
   const [conflictAlternatives, setConflictAlternatives] = useState(null);
   
@@ -19,7 +21,7 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Assuming user is mocked as Student (priority 1) in backend, we can just send the body
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           venue: venueId,

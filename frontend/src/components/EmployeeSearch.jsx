@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 export default function EmployeeSearch({ onSelect }) {
+  const { token } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +27,9 @@ export default function EmployeeSearch({ onSelect }) {
         return;
       }
       try {
-        const res = await fetch(`http://localhost:5000/api/users/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`http://localhost:5000/api/users/search?q=${encodeURIComponent(query)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         setResults(data);
       } catch (err) {
