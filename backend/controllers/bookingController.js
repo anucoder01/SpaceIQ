@@ -1,6 +1,26 @@
 const Booking = require('../models/Booking');
 const Venue = require('../models/Venue');
 const Asset = require('../models/Asset');
+const AuditLog = require('../models/AuditLog');
+
+async function createAuditLog(action, entityType, entityId, performedBy, details) {
+  try {
+    const lastLog = await AuditLog.findOne().sort({ createdAt: -1 });
+    const previousHash = lastLog ? lastLog.hash : 'GENESIS';
+
+    const log = new AuditLog({
+      action,
+      entityType,
+      entityId,
+      performedBy,
+      details: JSON.stringify(details),
+      previousHash
+    });
+    await log.save();
+  } catch (err) {
+    console.error('Failed to create audit log', err);
+  }
+}
 
 exports.createBooking = async (req, res) => {
   try {
@@ -41,6 +61,7 @@ exports.createBooking = async (req, res) => {
           status: 'Approved' // Admin bookings might be auto-approved
         });
         await newBooking.save();
+        await createAuditLog('BOOKING_CREATED_DISPLACED', 'Booking', newBooking._id, req.user._id, { priority, purpose, venue });
         
         return res.status(201).json({ 
           message: 'Booking successful. Conflicting lower-priority bookings were displaced.',
@@ -60,6 +81,7 @@ exports.createBooking = async (req, res) => {
             status: 'Waitlisted'
           });
           await newBooking.save();
+          await createAuditLog('BOOKING_WAITLISTED', 'Booking', newBooking._id, req.user._id, { priority, purpose, venue });
           return res.status(201).json({ message: 'Successfully joined the waitlist.', booking: newBooking });
         }
 
@@ -106,6 +128,7 @@ exports.createBooking = async (req, res) => {
     });
     
     await newBooking.save();
+    await createAuditLog('BOOKING_CREATED', 'Booking', newBooking._id, req.user._id, { priority, purpose, venue });
     res.status(201).json({ message: 'Booking request created successfully.', booking: newBooking });
 
   } catch (err) {
@@ -116,7 +139,15 @@ exports.createBooking = async (req, res) => {
 
 exports.getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate('user', 'name email role').populate('venue').populate('assets');
+    const { start, end } = req.query;
+    let query = {};
+    if (start && end) {
+      query = {
+        startTime: { $lt: new Date(end) },
+        endTime: { $gt: new Date(start) }
+      };
+    }
+    const bookings = await Booking.find(query).populate('user', 'name email role').populate('venue').populate('assets');
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -151,6 +182,7 @@ exports.cancelBooking = async (req, res) => {
 
     booking.status = 'Cancelled';
     await booking.save();
+    await createAuditLog('BOOKING_CANCELLED', 'Booking', booking._id, req.user._id, { originalStatus: booking.status });
 
     // Check for waitlisted bookings for the same venue overlapping the canceled time
     const waitlistedBooking = await Booking.findOne({
@@ -164,6 +196,7 @@ exports.cancelBooking = async (req, res) => {
       // Approve the oldest waitlisted booking
       waitlistedBooking.status = 'Approved';
       await waitlistedBooking.save();
+      await createAuditLog('BOOKING_APPROVED_FROM_WAITLIST', 'Booking', waitlistedBooking._id, req.user._id, { reason: 'Slot became available' });
     }
 
     res.json({ message: 'Booking cancelled successfully' });
