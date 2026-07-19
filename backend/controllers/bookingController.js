@@ -205,3 +205,23 @@ exports.cancelBooking = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.addBookingFee = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    
+    const { type, amount, reason } = req.body;
+    if (!type || !amount) return res.status(400).json({ error: 'Type and amount are required' });
+
+    booking.fees.push({ type, amount, reason });
+    await booking.save();
+
+    await createAuditLog('BOOKING_FEE_ADDED', 'Booking', booking._id, req.user._id, { type, amount, reason });
+    
+    res.json({ message: 'Fee added successfully', booking });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

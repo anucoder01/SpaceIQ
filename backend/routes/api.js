@@ -75,6 +75,7 @@ router.post('/bookings', authenticate, bookingController.createBooking);
 router.get('/bookings', authenticate, bookingController.getAllBookings);
 router.get('/bookings/today', authenticate, bookingController.getTodayBookings);
 router.delete('/bookings/:id', authenticate, bookingController.cancelBooking);
+router.post('/bookings/:id/fees', authenticate, isAdmin, bookingController.addBookingFee);
 
 const User = require('../models/User');
 router.get('/users/search', authenticate, async (req, res) => {
@@ -109,10 +110,19 @@ router.get('/venues', async (req, res) => {
   const venues = await Venue.find();
   res.json(venues);
 });
-router.post('/venues', async (req, res) => {
+router.post('/venues', authenticate, isAdmin, async (req, res) => {
   const newVenue = new Venue(req.body);
   await newVenue.save();
   res.status(201).json(newVenue);
+});
+router.put('/venues/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const venue = await Venue.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    res.json(venue);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;
