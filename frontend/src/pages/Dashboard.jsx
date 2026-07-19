@@ -10,6 +10,8 @@ import FloorPlanMap from '../components/FloorPlanMap';
 import EmployeeSearch from '../components/EmployeeSearch';
 import { useAuth } from '../context/AuthContext';
 
+import RoomDetailsModal from '../components/RoomDetailsModal';
+
 const locales = {
   'en-US': enUS,
 }
@@ -37,6 +39,7 @@ const mockEvents = [
 
 export default function Dashboard() {
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [showRoomDetails, setShowRoomDetails] = useState(false);
   const [selectedVenueForBooking, setSelectedVenueForBooking] = useState(null);
   const [events, setEvents] = useState([]);
   const [viewMode, setViewMode] = useState('map');
@@ -215,12 +218,26 @@ export default function Dashboard() {
               highlightedVenueId={highlightedVenueId}
               onRoomClick={(venue) => {
                 setSelectedVenueForBooking(venue);
-                setShowBookingForm(true);
+                setShowRoomDetails(true);
               }} 
             />
           )}
         </div>
       </motion.div>
+
+      {showRoomDetails && (
+        <RoomDetailsModal
+          venue={selectedVenueForBooking}
+          onClose={() => {
+            setShowRoomDetails(false);
+            setSelectedVenueForBooking(null);
+          }}
+          onProceed={(venue) => {
+            setShowRoomDetails(false);
+            setShowBookingForm(true);
+          }}
+        />
+      )}
 
       {showBookingForm && (
         <BookingForm 

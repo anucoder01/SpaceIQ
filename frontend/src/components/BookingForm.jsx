@@ -132,6 +132,10 @@ export default function BookingForm({ onClose, selectedVenue, venues = [] }) {
                   />
                 </div>
 
+                <div className="bg-destructive/5 text-xs text-destructive/80 p-3 rounded-md mt-4 border border-destructive/20">
+                  <strong>Disclaimer:</strong> By confirming this booking, you agree to our policies. Late checkouts will incur a $20 fee per 15 minutes. Any damages to the room will be billed to your account.
+                </div>
+
                 <button type="submit" className="w-full bg-primary text-primary-foreground py-2 rounded-md hover:opacity-90 transition-opacity mt-4">
                   Confirm Booking
                 </button>
