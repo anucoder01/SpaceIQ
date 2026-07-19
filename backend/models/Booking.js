@@ -26,7 +26,13 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 1 // Higher number means higher priority. E.g., Student=1, Faculty=2, Admin=3
   },
-  purpose: { type: String }
+  purpose: { type: String },
+  fees: [{
+    type: { type: String, enum: ['Late', 'Damage', 'Other'] },
+    amount: { type: Number, required: true },
+    reason: { type: String },
+    date: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

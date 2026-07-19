@@ -17,11 +17,11 @@ const seedData = async () => {
 
     console.log('Inserting Venues...');
     const venues = await Venue.insertMany([
-      { name: 'Conf A', building: 'HQ', capacity: 10, status: 'Available', svgId: 'conf-a', x: 50, y: 50, width: 200, height: 150 },
-      { name: 'Conf B', building: 'HQ', capacity: 20, status: 'Available', svgId: 'conf-b', x: 270, y: 50, width: 200, height: 150 },
-      { name: 'Studio', building: 'HQ', capacity: 5, status: 'Available', svgId: 'studio', x: 50, y: 220, width: 150, height: 200 },
-      { name: 'Desk 1', building: 'HQ', capacity: 1, status: 'Available', svgId: 'desk-1', x: 250, y: 220, width: 80, height: 80 },
-      { name: 'Desk 2', building: 'HQ', capacity: 1, status: 'Available', svgId: 'desk-2', x: 350, y: 220, width: 80, height: 80 }
+      { name: 'Conf A', building: 'HQ', capacity: 10, status: 'Available', features: ['Projector', 'Whiteboard', 'Zoom Room'], charges: 50, svgId: 'conf-a', x: 50, y: 50, width: 200, height: 150 },
+      { name: 'Conf B', building: 'HQ', capacity: 20, status: 'Available', features: ['Projector', 'Dual Screens', 'Catering Area'], charges: 75, svgId: 'conf-b', x: 270, y: 50, width: 200, height: 150 },
+      { name: 'Studio', building: 'HQ', capacity: 5, status: 'Available', features: ['Green Screen', 'Audio Interface', 'Lighting Kit'], charges: 100, svgId: 'studio', x: 50, y: 220, width: 150, height: 200 },
+      { name: 'Desk 1', building: 'HQ', capacity: 1, status: 'Available', features: ['Monitor', 'Standing Desk'], charges: 10, svgId: 'desk-1', x: 250, y: 220, width: 80, height: 80 },
+      { name: 'Desk 2', building: 'HQ', capacity: 1, status: 'Available', features: ['Monitor', 'Ergonomic Chair'], charges: 10, svgId: 'desk-2', x: 350, y: 220, width: 80, height: 80 }
     ]);
 
     console.log('Inserting Users...');

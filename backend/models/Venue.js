@@ -6,9 +6,11 @@ const venueSchema = new mongoose.Schema({
   capacity: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['Available', 'Under Maintenance'],
+    enum: ['Available', 'Under Maintenance', 'Under Renovation', 'Getting Cleaned'],
     default: 'Available'
   },
+  features: [{ type: String }],
+  charges: { type: Number, default: 0 },
   svgId: { type: String, required: true },
   x: { type: Number, required: true },
   y: { type: Number, required: true },
